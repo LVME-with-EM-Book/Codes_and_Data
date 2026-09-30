@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Donnet, Gloaguen, Robin">
+<meta name="dcterms.date" content="2026-09-30">
+
+<title>Chap. 2: Latent variable models and the EM algorithm</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="EM_toy_mixture_files/libs/clipboard/clipboard.min.js"></script>
+<script src="EM_toy_mixture_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="EM_toy_mixture_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="EM_toy_mixture_files/libs/quarto-html/popper.min.js"></script>
+<script src="EM_toy_mixture_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="EM_toy_mixture_files/libs/quarto-html/anchor.min.js"></script>
+<link href="EM_toy_mixture_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="EM_toy_mixture_files/libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="EM_toy_mixture_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="EM_toy_mixture_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="EM_toy_mixture_files/libs/bootstrap/bootstrap-d49910c2835f6cc0c318f40462b483df.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="EM_toy_mixture_files/libs/kePrint-0.0.1/kePrint.js"></script>
+<link href="EM_toy_mixture_files/libs/lightable-0.0.1/lightable.css" rel="stylesheet">
+<link href="EM_toy_mixture_files/libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet">
+<script src="EM_toy_mixture_files/libs/pagedtable-1.1/js/pagedtable.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#palmer-penguins-dataset" id="toc-palmer-penguins-dataset" class="nav-link active" data-scroll-target="#palmer-penguins-dataset">1. Palmer penguins dataset</a>
+  <ul class="collapse">
+  <li><a href="#mixture-of-two-gaussian-distributions." id="toc-mixture-of-two-gaussian-distributions." class="nav-link" data-scroll-target="#mixture-of-two-gaussian-distributions.">Mixture of two gaussian distributions.</a></li>
+  <li><a href="#em-on-palmer-penguins-dataset" id="toc-em-on-palmer-penguins-dataset" class="nav-link" data-scroll-target="#em-on-palmer-penguins-dataset">EM on Palmer Penguins dataset</a></li>
+  </ul></li>
+  <li><a href="#to-go-further" id="toc-to-go-further" class="nav-link" data-scroll-target="#to-go-further">2. To go further</a>
+  <ul class="collapse">
+  <li><a href="#simulating-data" id="toc-simulating-data" class="nav-link" data-scroll-target="#simulating-data">Simulating data</a></li>
+  <li><a href="#the-shape-of-the-objective-function" id="toc-the-shape-of-the-objective-function" class="nav-link" data-scroll-target="#the-shape-of-the-objective-function">The shape of the objective function</a></li>
+  <li><a href="#em-behavior-on-the-likelihood-surface" id="toc-em-behavior-on-the-likelihood-surface" class="nav-link" data-scroll-target="#em-behavior-on-the-likelihood-surface">EM behavior on the likelihood surface</a></li>
+  </ul></li>
+  </ul>
+</nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Chap. 2: Latent variable models and the EM algorithm</h1>
+<p class="subtitle lead">The EM algorithm in action on a two-component Gaussian mixture</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Donnet, Gloaguen, Robin </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">September 30, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="cell">
+<details class="code-fold">
+<summary>Required packages</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2); <span class="fu">theme_set</span>(<span class="fu">theme_bw</span>())</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(palmerpenguins)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(kableExtra)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<p>This document illustrates the <strong>functioning of the Expectation-Maximization (EM)</strong> algorithm on arguably its simplest instance: a two-component univariate Gaussian mixture model. It accompanies Chapter 2 (“Latent variable models and the EM algorithm”) of the book.</p>
+<section id="palmer-penguins-dataset" class="level2">
+<h2 class="anchored" data-anchor-id="palmer-penguins-dataset">1. Palmer penguins dataset</h2>
+<p>As a first illustrative example, let us consider the Palmer penguins dataset . The dataset contains the measurement of bill length for <span class="math inline">\(342\)</span> penguins collected from three islands in the Palmer Archipelago, Antarctica.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(penguins <span class="sc">%&gt;%</span> <span class="fu">na.omit</span>(),<span class="fu">aes</span>(<span class="at">x=</span>bill_length_mm)) <span class="sc">+</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">color =</span> <span class="st">"black"</span>,<span class="at">fill=</span><span class="st">"cyan4"</span>, <span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">32</span>, <span class="dv">60</span>, <span class="at">by =</span> <span class="dv">1</span>)) <span class="sc">+</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Bill length (mm)"</span>, <span class="at">y =</span> <span class="st">"Counts"</span>) <span class="sc">+</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">35</span>, <span class="dv">55</span>, <span class="at">by =</span> <span class="dv">10</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="EM_toy_mixture_files/figure-html/data%20palmer%20penguins-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Our objective is to model the distribution of bill length in Palmer penguins.<br>
+A quick look at the histogram of bill length suggests that a simple Gaussian distribution is not adequate. Indeed, the distribution exhibits multiple local modes (peaks), indicating that it may not originate from a single homogeneous population. Since the distribution of a trait within a homogeneous population is typically assumed to follow a Gaussian distribution, this observed multimodality may reflect the presence of heterogeneous subpopulations, each with distinct bill length characteristics.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Note that the dataset actually includes information on both species and sex. However, for the purpose of this introductory example, we intentionally ignore these variables.</p>
+</div>
+</div>
+<section id="mixture-of-two-gaussian-distributions." class="level3">
+<h3 class="anchored" data-anchor-id="mixture-of-two-gaussian-distributions.">Mixture of two gaussian distributions.</h3>
+<p>The feature of the data naturally motivates the use of a (Gaussian) mixture model. Let <span class="math inline">\(\{y_i\}_{1 \leq i \leq n}\)</span> denote the <span class="math inline">\(n\)</span> observed bill lengths.<br>
+We assume these are realizations of <span class="math inline">\(n\)</span> independent random variables <span class="math inline">\(\{Y_i\}_{1 \leq i \leq n}\)</span> that follow a two-component Gaussian mixture distribution.</p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Mixture of two Gaussians
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>We introduce, for each observation <span class="math inline">\(i\)</span>, a latent (unobserved) variable <span class="math inline">\(Z_i \in \{1,2\}\)</span> indicating which component generated <span class="math inline">\(y_i\)</span>. Conditionally on <span class="math inline">\(Z_i = k\)</span>,</p>
+<p><span class="math display">\[
+y_i \mid Z_i = k \ \sim\ \mathcal N(\mu_k,\sigma_k^2),
+\qquad
+P(Z_i = 1) = p .
+\]</span></p>
+</div>
+</div>
+<p><strong>EM</strong> maximises the (non-concave) likelihood function iteratively: EM is widely described in Chapter 2 of the book, with all the necessary technical details for its application on the mixture of two gaussian distributions. Please refer to this book if needed. The helper functions implementing the E step, the M step and the log-likelihood are provided in <a href="Functions_EM.R"><code>Functions_EM.R</code></a>.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">"Functions_EM.R"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="em-on-palmer-penguins-dataset" class="level3">
+<h3 class="anchored" data-anchor-id="em-on-palmer-penguins-dataset">EM on Palmer Penguins dataset</h3>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The results are saved in <code>res_EM_Palmer.Rdata</code>. The algorithms will be run again is the file is not found. If you want to force the run, change the argument <code>res_EM_Palmer_exist</code> to <code>FALSE</code>.</p>
+</div>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Run the EM for various starting points</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>res_EM_Palmer_exist <span class="ot">&lt;-</span> <span class="fu">file.exists</span>(<span class="st">"res_EM_Palmer.Rdata"</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> penguins<span class="sc">$</span>bill_length_mm <span class="co"># dataset</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> y[<span class="sc">!</span><span class="fu">is.na</span>(y)] <span class="co"># remove na </span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co"># various initialisations</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>params0 <span class="ot">=</span> <span class="fu">list</span>(<span class="fu">list</span>(<span class="at">mu=</span><span class="fu">c</span>(<span class="dv">40</span>,<span class="dv">50</span>),<span class="at">var=</span><span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">5</span>),<span class="at">p=</span><span class="fl">0.5</span>), </span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">list</span>(<span class="at">mu=</span><span class="fu">c</span>(<span class="dv">20</span>,<span class="dv">50</span>),<span class="at">var=</span><span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">5</span>),<span class="at">p=</span><span class="fl">0.5</span>),</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">list</span>(<span class="at">mu=</span><span class="fu">c</span>(<span class="dv">35</span>,<span class="dv">70</span>),<span class="at">var=</span><span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">5</span>),<span class="at">p=</span><span class="fl">0.6</span>),</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">list</span>(<span class="at">mu=</span><span class="fu">c</span>(<span class="dv">50</span>,<span class="dv">40</span>),<span class="at">var=</span><span class="fu">c</span>(<span class="dv">10</span>,<span class="dv">10</span>),<span class="at">p=</span><span class="fl">0.4</span>),</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">list</span>(<span class="at">mu=</span><span class="fu">c</span>(<span class="dv">40</span>,<span class="dv">50</span>),<span class="at">var=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>),<span class="at">p=</span><span class="fl">0.5</span>))</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>KM <span class="ot">&lt;-</span> <span class="fu">kmeans</span>(y, <span class="dv">2</span>) <span class="co"># initialisation withe kmeans</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>params0[[<span class="dv">6</span>]] <span class="ot">=</span> <span class="fu">list</span>(<span class="at">mu=</span>KM<span class="sc">$</span>centers,<span class="at">var=</span><span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">3</span>),<span class="at">p=</span><span class="fl">0.5</span>)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(res_EM_Palmer_exist){ <span class="co"># load results if they exist</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">load</span>(<span class="st">"res_EM_Palmer.Rdata"</span>)</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>}<span class="cf">else</span>{</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>  <span class="co">#---------------- RUNs  EM from various starting points</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>  res_EM_palmer <span class="ot">&lt;-</span><span class="fu">do.call</span>(rbind,<span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(params0),<span class="cf">function</span>(run){</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>    res_EM_run  <span class="ot">&lt;-</span> <span class="fu">EM_2Mixture</span>(params0[[run]],y,<span class="at">tol=</span><span class="dv">10</span><span class="sc">^</span>{<span class="sc">-</span><span class="dv">7</span>},<span class="at">estim_only_mu =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>    niter <span class="ot">&lt;-</span> <span class="fu">nrow</span>(res_EM_run)</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>    res_EM_run <span class="ot">&lt;-</span> <span class="fu">cbind</span>(res_EM_run,<span class="fu">rep</span>(run,niter),<span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(res_EM_run))</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">names</span>(res_EM_run)[<span class="dv">7</span>]<span class="ot">=</span><span class="st">'Init'</span></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">names</span>(res_EM_run)[<span class="dv">8</span>]<span class="ot">=</span><span class="st">'numIter'</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(res_EM_run)}))</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">save</span>(res_EM_palmer, <span class="at">file=</span><span class="st">'res_EM_Palmer.Rdata'</span>)</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<p>We obtain the following trajectories for the likelihood along the iterations of the various run of the EM starting form different values of parameters.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Display the reached likelihood values</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">#------------------------------------------------</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>tabl <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">unlist</span>(params0),<span class="at">ncol=</span><span class="dv">5</span>,<span class="at">byrow=</span><span class="cn">TRUE</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>tabl <span class="ot">&lt;-</span> <span class="fu">cbind</span>(tabl,<span class="fu">rep</span>(<span class="dv">0</span>,<span class="fu">length</span>(params0)))</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="fu">row.names</span>(tabl) <span class="ot">=</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(params0)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (init <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(params0)){</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  w <span class="ot">&lt;-</span> <span class="fu">which</span>(res_EM_palmer<span class="sc">$</span>Init<span class="sc">==</span>init)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  tabl[init,<span class="dv">6</span>]<span class="ot">&lt;-</span> <span class="fu">max</span>(res_EM_palmer<span class="sc">$</span>loglik[w])</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(tabl) <span class="ot">=</span> <span class="fu">c</span>(</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="sc">\\</span><span class="st">(</span><span class="sc">\\</span><span class="st">mu^{(0)}_1</span><span class="sc">\\</span><span class="st">)"</span>,</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="sc">\\</span><span class="st">(</span><span class="sc">\\</span><span class="st">mu^{(0)}_2</span><span class="sc">\\</span><span class="st">)"</span>,</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="sc">\\</span><span class="st">(</span><span class="sc">\\</span><span class="st">sigma^{(0)}_1</span><span class="sc">\\</span><span class="st">)"</span>,</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="sc">\\</span><span class="st">(</span><span class="sc">\\</span><span class="st">sigma^{(0)}_2</span><span class="sc">\\</span><span class="st">)"</span>,</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  <span class="st">"p"</span>,</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  <span class="st">"log-likelihood"</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>  tabl,</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">format =</span> <span class="st">"html"</span>,</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">digits    =</span> <span class="dv">3</span>,</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">align     =</span> <span class="st">"lccccl"</span>,</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">escape    =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">caption   =</span> <span class="st">"Initial parameters and log-likelihood reached by EM for each run."</span>)<span class="sc">|&gt;</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>kableExtra<span class="sc">::</span><span class="fu">kable_styling</span>(<span class="at">bootstrap_options =</span> <span class="fu">c</span>(<span class="st">"striped"</span>, <span class="st">"hover"</span>, <span class="st">"condensed"</span>), <span class="at">full_width =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<table class="table table-striped table-hover table-condensed caption-top table-sm small">
+<caption>Initial parameters and log-likelihood reached by EM for each run.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">\(\mu^{(0)}_1\)</th>
+<th style="text-align: center;" data-quarto-table-cell-role="th">\(\mu^{(0)}_2\)</th>
+<th style="text-align: center;" data-quarto-table-cell-role="th">\(\sigma^{(0)}_1\)</th>
+<th style="text-align: center;" data-quarto-table-cell-role="th">\(\sigma^{(0)}_2\)</th>
+<th style="text-align: center;" data-quarto-table-cell-role="th">p</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">log-likelihood</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">40.000</td>
+<td style="text-align: center;">50.000</td>
+<td style="text-align: center;">5</td>
+<td style="text-align: center;">5</td>
+<td style="text-align: center;">0.5</td>
+<td style="text-align: left;">-1043.558</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">20.000</td>
+<td style="text-align: center;">50.000</td>
+<td style="text-align: center;">5</td>
+<td style="text-align: center;">5</td>
+<td style="text-align: center;">0.5</td>
+<td style="text-align: left;">-1043.558</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">35.000</td>
+<td style="text-align: center;">70.000</td>
+<td style="text-align: center;">5</td>
+<td style="text-align: center;">5</td>
+<td style="text-align: center;">0.6</td>
+<td style="text-align: left;">-1053.445</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">50.000</td>
+<td style="text-align: center;">40.000</td>
+<td style="text-align: center;">10</td>
+<td style="text-align: center;">10</td>
+<td style="text-align: center;">0.4</td>
+<td style="text-align: left;">-1043.558</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">40.000</td>
+<td style="text-align: center;">50.000</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">0.5</td>
+<td style="text-align: left;">-1043.558</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">48.494</td>
+<td style="text-align: center;">39.074</td>
+<td style="text-align: center;">3</td>
+<td style="text-align: center;">3</td>
+<td style="text-align: center;">0.5</td>
+<td style="text-align: left;">-1043.558</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>The above table provides 6 initial points <span class="math inline">\(\theta^{(0)}\)</span> and the likelihood reached by the EM starting from theses points. The initial points 1,2,4,5, and 6 lead to the same value of the likelihood (<span class="math inline">\(p_{\widehat{\theta}}(y)=-1043.56\)</span>) and to the same value of parameter <span class="math inline">\(\widehat{\theta}\)</span> (not shown here). However, the third initial point does not allow the EM algorithm to reach the global maximum. In the next figure, we represent the log-likelihood along the iterations of the algorithm starting from the initial points <span class="math inline">\(\theta^{(0)}\)</span> reported in the table.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Display the reached likelihood values</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>res_EM_palmer<span class="sc">$</span>Init <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(res_EM_palmer<span class="sc">$</span>Init)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>res_EM_palmer <span class="ot">&lt;-</span> res_EM_palmer <span class="sc">%&gt;%</span> <span class="fu">filter</span>(numIter<span class="sc">&gt;</span><span class="dv">3</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(res_EM_palmer,<span class="fu">aes</span>(<span class="at">x=</span>numIter <span class="sc">-</span> <span class="dv">4</span>, <span class="at">y=</span>loglik,<span class="at">colour =</span> Init)) <span class="sc">+</span> </span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span> </span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> .<span class="dv">5</span>) <span class="sc">+</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">"Log likelihood"</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Iterations"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="EM_toy_mixture_files/figure-html/plot%20traj-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="to-go-further" class="level2">
+<h2 class="anchored" data-anchor-id="to-go-further">2. To go further</h2>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Remark
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>As before, all the numerical results are cached in <code>res_EM_toy_mixture.Rdata</code>: if this file is present they are loaded; otherwise the computations are run live and the results saved.</p>
+</div>
+</div>
+<section id="simulating-data" class="level3">
+<h3 class="anchored" data-anchor-id="simulating-data">Simulating data</h3>
+<p>To further investigate the behavior of the EM algorithm, we consider a special case where the parameters <span class="math inline">\((p,\sigma^2_{1}, \sigma^2_2)\)</span> are known and fixed to their true values, and only <span class="math inline">\((\mu_1, \mu_2)\)</span> are to be estimated. For this experiment, we simulate data using the parameters <span class="math inline">\(p = 0.3\)</span>, <span class="math inline">\(\sigma^2_1= \sigma^2_2=1\)</span>, and <span class="math inline">\((\mu_1,\mu_2)=(2, 5)\)</span>.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Data simulation</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>p.true <span class="ot">&lt;-</span> <span class="fl">0.3</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>mu.true <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">5</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>sd.true <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">500</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>res_EM_only_mu <span class="ot">&lt;-</span> <span class="fu">file.exists</span>(<span class="st">"res_EM_toy_mixture.Rdata"</span>)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (res_EM_only_mu) {</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Load cached results -&gt; y , res_like_surface, res_all_run_only_mu </span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">load</span>(<span class="st">"res_EM_toy_mixture.Rdata"</span>)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>}<span class="cf">else</span>{</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set.seed</span>(<span class="dv">3852</span>)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Latent component membership</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  Z <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(n, <span class="dv">1</span>, p.true)          <span class="co"># Z_i = 1 with prob p</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(Z <span class="sc">==</span> <span class="dv">1</span>,<span class="fu">rnorm</span>(n, mu.true[<span class="dv">1</span>], sd.true[<span class="dv">1</span>]),</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>            <span class="fu">rnorm</span>(n, mu.true[<span class="dv">2</span>], sd.true[<span class="dv">2</span>]))</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>  df_y <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">y =</span> y)</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+</section>
+<section id="the-shape-of-the-objective-function" class="level3">
+<h3 class="anchored" data-anchor-id="the-shape-of-the-objective-function">The shape of the objective function</h3>
+<p>The observed-data log-likelihood of a mixture is <em>multi-modal</em>. To visualise it, we fix <span class="math inline">\(p = 0.3\)</span> and the variances <span class="math inline">\(\sigma_1^2=\sigma_2^2=1\)</span> at their true values, and evaluate <span class="math inline">\((\mu_1,\mu_2) \mapsto \ell(y_1, \dots, y_n;\theta)\)</span> on a grid:</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Compute the surface</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span>res_EM_only_mu) {</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  N <span class="ot">&lt;-</span> <span class="dv">150</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  grid_mu1 <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">7</span>, <span class="at">length.out =</span> N)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  grid_mu2 <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">7</span>, <span class="at">length.out =</span> N)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  res_like_surface <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(<span class="at">mu1 =</span> grid_mu1, <span class="at">mu2 =</span> grid_mu2)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  res_like_surface<span class="sc">$</span>loglik <span class="ot">&lt;-</span> <span class="fu">vapply</span>(<span class="fu">seq_len</span>(<span class="fu">nrow</span>(res_like_surface)), <span class="cf">function</span>(i) {</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    pars <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">mu =</span> <span class="fu">c</span>(res_like_surface<span class="sc">$</span>mu1[i], res_like_surface<span class="sc">$</span>mu2[i]),</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>                 <span class="at">var =</span> sd.true<span class="sc">^</span><span class="dv">2</span>, <span class="at">p =</span> p.true)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">logLikelihood</span>(pars, y)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  }, <span class="fu">numeric</span>(<span class="dv">1</span>))</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<p>Because the component weights are fixed to <span class="math inline">\(p = 0.3\)</span> (and not <span class="math inline">\(0.5\)</span>), the surface is <strong>not</strong> symmetric under the exchange of <span class="math inline">\(\mu_1\)</span> and <span class="math inline">\(\mu_2\)</span>. Its global maximum lies at <span class="math inline">\((\mu_1,\mu_2) \approx (2,5)\)</span>.<br>
+In the surface plot, you can observe local maxima and saddle points. The difficulty for EM comes from the fact that the algorithm can be trapped away from the global maximum, as illustrated below.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Pplot the surface</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>gg_surface  <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(res_like_surface, <span class="fu">aes</span>(<span class="at">x =</span> mu1, <span class="at">y =</span> mu2, <span class="at">z =</span> loglik)) <span class="sc">+</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_tile</span>(<span class="fu">aes</span>(<span class="at">fill =</span> loglik)) <span class="sc">+</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_viridis_c</span>() <span class="sc">+</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stat_contour</span>(<span class="at">colour =</span> <span class="st">"white"</span>, <span class="at">linewidth =</span> <span class="fl">0.25</span>) <span class="sc">+</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="fu">expression</span>(mu[<span class="dv">1</span>]), <span class="at">y =</span> <span class="fu">expression</span>(mu[<span class="dv">2</span>]), <span class="at">fill =</span> <span class="st">"Log-likelihood"</span>) <span class="sc">+</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_equal</span>(<span class="at">expand =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>gg_surface</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="EM_toy_mixture_files/figure-html/surface-plot-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="em-behavior-on-the-likelihood-surface" class="level3">
+<h3 class="anchored" data-anchor-id="em-behavior-on-the-likelihood-surface">EM behavior on the likelihood surface</h3>
+<p>We run EM — updating <span class="math inline">\(\mu_1\)</span> and <span class="math inline">\(\mu_2\)</span> only (variances and weight fixed, so that the trajectories stay in the <span class="math inline">\((\mu_1,\mu_2)\)</span> plane of the surface above) — from several starting points:</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Run the EM from various starting points</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>theta0_mu <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">mu =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>),   <span class="at">var =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>), <span class="at">p =</span> <span class="fl">0.3</span>),</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">mu =</span> <span class="fu">c</span>(<span class="fl">0.5</span>, <span class="dv">4</span>), <span class="at">var =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>), <span class="at">p =</span> <span class="fl">0.3</span>),</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">mu =</span> <span class="fu">c</span>(<span class="dv">6</span>, <span class="dv">1</span>),   <span class="at">var =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>), <span class="at">p =</span> <span class="fl">0.3</span>),</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">mu =</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="fl">6.5</span>), <span class="at">var =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>), <span class="at">p =</span> <span class="fl">0.3</span>),</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">mu =</span> <span class="fu">c</span>(<span class="dv">6</span>, <span class="dv">6</span>),   <span class="at">var =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>), <span class="at">p =</span> <span class="fl">0.3</span>)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span>res_EM_only_mu) {</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>  res_all_run_only_mu <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, <span class="fu">lapply</span>(<span class="fu">seq_along</span>(theta0_mu), <span class="cf">function</span>(run) {</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    res <span class="ot">&lt;-</span> <span class="fu">EM_2Mixture</span>(theta0_mu[[run]], y, <span class="at">tol =</span> <span class="fl">1e-5</span>,<span class="at">estim_only_mu =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cbind</span>(res,</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>          <span class="at">Init    =</span> run,</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>          <span class="at">numIter =</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(res)))</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>  }))</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>  res_all_run_only_mu<span class="sc">$</span>Init <span class="ot">&lt;-</span> <span class="fu">factor</span>(res_all_run_only_mu<span class="sc">$</span>Init)</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">save</span>(y,res_all_run_only_mu, res_like_surface, <span class="at">file=</span><span class="st">"res_EM_toy_mixture.Rdata"</span>)</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Plot the trajectories</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>gg_surface  <span class="sc">+</span> <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">x =</span> mu.true[<span class="dv">1</span>], <span class="at">y =</span> mu.true[<span class="dv">2</span>]),</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>             <span class="at">shape =</span> <span class="dv">0</span>, <span class="at">colour =</span> <span class="st">"red"</span>, <span class="at">size =</span> <span class="dv">4</span>) <span class="sc">+</span> </span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> res_all_run_only_mu, <span class="fu">aes</span>(<span class="at">colour =</span> Init), <span class="at">linewidth =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> res_all_run_only_mu, <span class="fu">aes</span>(<span class="at">colour =</span> Init), <span class="at">size =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> res_all_run_only_mu <span class="sc">%&gt;%</span> <span class="fu">filter</span>(numIter<span class="sc">==</span><span class="dv">1</span>), <span class="fu">aes</span>(<span class="at">colour =</span> Init),<span class="at">shape =</span> <span class="dv">4</span>, <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span> <span class="fu">guides</span>(<span class="at">colour =</span> <span class="fu">guide_legend</span>(<span class="at">title =</span> <span class="st">"Initialisation"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="EM_toy_mixture_files/figure-html/em-surface-trajectory-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The crosses mark the starting points and the red square the true parameter <span class="math inline">\((\mu_1,\mu_2) = (2,5)\)</span>; each colored line is the path of the EM updates. Three distinct convergence points can be observed: one corresponds to the global maximum of the likelihood (marked by the green point), which is close to the true parameter values (red square); another corresponds to a local maximum (bottom right); and the third corresponds to a saddle point of the likelihood surface (center of the figure).</p>
+<p>This toy example illustrates the practical importance of initializing the EM algorithm from multiple or carefully chosen starting points, in order to explore different regions of the parameter space and improve the chances of reaching the global maximum.</p>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

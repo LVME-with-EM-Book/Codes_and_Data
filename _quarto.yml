@@ -1,0 +1,29 @@
+project:
+  type: website
+
+website:
+  title: "Codes and Data"
+  page-footer:
+    left: "LVME with EM"
+    right: "© 2026"
+    border: true
+
+  sidebar:
+    style: "docked"
+    title: "Latent variable models for ecology with EM"
+    header: |
+      ![](/images/bird.png){width=90%}
+    contents:
+      - href: index.qmd
+        text: Home
+      - section: "Codes"
+        contents:
+          - Codes/02_MixtureAdelie/Chap2_EM_toy_mixture.qmd
+          - Codes/05_SBM_LBM/Chap5_SBM_Application.qmd
+          - Codes/06_NonLinearMIxedEffects/Chap6_SAEM_MCMC_LFMC.qmd
+
+format:
+  html:
+    theme: [cosmo, css/styles.css]
+    code-copy: true
+    code-line-numbers: false

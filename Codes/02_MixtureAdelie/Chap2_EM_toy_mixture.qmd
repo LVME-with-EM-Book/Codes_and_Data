@@ -1,0 +1,307 @@
+---
+title: "Chap. 2: Latent variable models and the EM algorithm"
+subtitle: "The EM algorithm in action on a two-component Gaussian mixture"
+author: "Donnet, Gloaguen, Robin"
+date: "`r Sys.Date()`"
+format:
+  html:
+    toc: true
+    toc_float: true
+    df-print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo    = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  cache   = TRUE
+)
+```
+
+```{r packages}
+#| code-fold: true
+#| code-summary: "Required packages"
+library(ggplot2); theme_set(theme_bw())
+library(palmerpenguins)
+library(dplyr)
+library(tidyr)
+library(knitr)
+library(kableExtra)
+```
+
+This document illustrates the **functioning of the Expectation-Maximization (EM)** algorithm on arguably its simplest instance: a two-component univariate Gaussian mixture model. It accompanies Chapter 2 ("Latent variable models and the EM algorithm") of the book.
+
+
+## 1. Palmer penguins dataset 
+
+As a first illustrative example, let us consider the Palmer penguins dataset \citep{palmerpenguins}.   The dataset contains the measurement of bill length for $342$ penguins collected from three islands in the Palmer Archipelago, Antarctica. 
+
+```{r data palmer penguins}
+ggplot(penguins %>% na.omit(),aes(x=bill_length_mm)) +
+  geom_histogram(color = "black",fill="cyan4", breaks = seq(32, 60, by = 1)) +
+  labs(x = "Bill length (mm)", y = "Counts") +
+  scale_x_continuous(breaks = seq(35, 55, by = 10))
+``` 
+
+Our objective is to model the distribution of bill length in Palmer penguins.  
+A quick look at the histogram of bill length suggests that a simple Gaussian distribution is not adequate. Indeed, the distribution exhibits multiple local modes (peaks), indicating that it may not originate from a single homogeneous population.   Since the distribution of a trait within a homogeneous population is typically assumed to follow a Gaussian distribution, this observed multimodality may reflect the presence of heterogeneous subpopulations, each with distinct bill length characteristics.
+
+::: {.callout-note}
+Note that the dataset actually includes information on both species and sex. However, for the purpose of this introductory example, we intentionally ignore these variables.  
+::: 
+
+
+
+### Mixture of two gaussian distributions. 
+The feature of the data naturally motivates the use of a (Gaussian) mixture model. Let $\{y_i\}_{1 \leq i \leq n}$ denote the $n$ observed bill lengths.  
+We assume these are realizations of $n$ independent random variables $\{Y_i\}_{1 \leq i \leq n}$ that follow a two-component Gaussian mixture distribution.
+
+::: {.callout-important}
+## Mixture of two Gaussians
+We introduce, for each observation $i$, a latent (unobserved) variable $Z_i \in \{1,2\}$ indicating which component generated $y_i$. Conditionally on $Z_i = k$,
+
+$$
+y_i \mid Z_i = k \ \sim\ \mathcal N(\mu_k,\sigma_k^2),
+\qquad
+P(Z_i = 1) = p .
+$$
+:::
+
+
+**EM** maximises the (non-concave) likelihood function iteratively: EM is widely described in Chapter 2 of the book, with all the necessary technical details for its application on the mixture of two gaussian distributions. Please refer to this book if needed.  The helper functions implementing the E step, the M step and the log-likelihood are provided in [`Functions_EM.R`](Functions_EM.R).
+
+```{r source-functions}
+source("Functions_EM.R")
+```
+
+
+
+
+
+### EM on Palmer Penguins dataset
+
+::: {.callout-note}
+The results are saved in `res_EM_Palmer.Rdata`. The algorithms will be run again is the file is not found.  If you want to force the run, change the argument `res_EM_Palmer_exist` to `FALSE`.  
+::: 
+
+
+```{r EM  from several initialisations}
+#| code-fold: true
+#| code-summary: "Run the EM for various starting points"
+
+res_EM_Palmer_exist <- file.exists("res_EM_Palmer.Rdata")
+
+
+y <- penguins$bill_length_mm # dataset
+y <- y[!is.na(y)] # remove na 
+# various initialisations
+params0 = list(list(mu=c(40,50),var=c(5,5),p=0.5), 
+                 list(mu=c(20,50),var=c(5,5),p=0.5),
+                 list(mu=c(35,70),var=c(5,5),p=0.6),
+                 list(mu=c(50,40),var=c(10,10),p=0.4),
+                 list(mu=c(40,50),var=c(1,1),p=0.5))
+KM <- kmeans(y, 2) # initialisation withe kmeans
+params0[[6]] = list(mu=KM$centers,var=c(3,3),p=0.5)
+  
+  
+
+if(res_EM_Palmer_exist){ # load results if they exist
+  load("res_EM_Palmer.Rdata")
+}else{
+  #---------------- RUNs  EM from various starting points
+  res_EM_palmer <-do.call(rbind,lapply(1:length(params0),function(run){
+    res_EM_run  <- EM_2Mixture(params0[[run]],y,tol=10^{-7},estim_only_mu = FALSE)
+    niter <- nrow(res_EM_run)
+    res_EM_run <- cbind(res_EM_run,rep(run,niter),1:nrow(res_EM_run))
+    names(res_EM_run)[7]='Init'
+    names(res_EM_run)[8]='numIter'
+    return(res_EM_run)}))
+  save(res_EM_palmer, file='res_EM_Palmer.Rdata')
+}
+```
+
+We obtain the following trajectories for the likelihood along the iterations of the various run of the EM starting form different values of parameters. 
+
+
+
+```{r print results}
+#| code-fold: true
+#| code-summary: "Display the reached likelihood values"
+#------------------------------------------------
+tabl <- matrix(unlist(params0),ncol=5,byrow=TRUE)
+tabl <- cbind(tabl,rep(0,length(params0)))
+row.names(tabl) = 1:length(params0)
+for (init in 1:length(params0)){
+  w <- which(res_EM_palmer$Init==init)
+  tabl[init,6]<- max(res_EM_palmer$loglik[w])
+}
+
+colnames(tabl) = c(
+  "\\(\\mu^{(0)}_1\\)",
+  "\\(\\mu^{(0)}_2\\)",
+  "\\(\\sigma^{(0)}_1\\)",
+  "\\(\\sigma^{(0)}_2\\)",
+  "p",
+  "log-likelihood"
+)
+
+knitr::kable(
+  tabl,
+  format = "html",
+  digits    = 3,
+  align     = "lccccl",
+  escape    = FALSE,
+  caption   = "Initial parameters and log-likelihood reached by EM for each run.")|>
+kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE)
+
+```
+
+
+
+The above table provides 6 initial points $\theta^{(0)}$ and the likelihood reached by the EM starting from theses points. The initial points 1,2,4,5, and 6 lead to the same value of the likelihood ($p_{\widehat{\theta}}(y)=-1043.56$) and to the same value of parameter $\widehat{\theta}$ (not shown here).  However, the third initial point does not allow the EM algorithm to reach the global maximum.  In the next figure, we  represent the log-likelihood along the iterations of the algorithm starting from the  initial points $\theta^{(0)}$ reported in the table. 
+
+```{r plot traj}
+#| code-fold: true
+#| code-summary: "Display the reached likelihood values"
+res_EM_palmer$Init <- as.factor(res_EM_palmer$Init)
+res_EM_palmer <- res_EM_palmer %>% filter(numIter>3)
+ggplot(res_EM_palmer,aes(x=numIter - 4, y=loglik,colour = Init)) + 
+  geom_line() + 
+  geom_point(size = .5) +
+  labs(y = "Log likelihood",
+       x = "Iterations")
+```
+
+
+
+
+
+
+## 2. To go further 
+
+::: {.callout-note}
+## Remark
+As before, all the numerical results are cached in
+`res_EM_toy_mixture.Rdata`: if this file is present they are loaded; otherwise the computations are run live and the results saved.
+:::
+
+### Simulating data
+
+To further investigate the behavior of the EM algorithm, we consider a special case where the parameters $(p,\sigma^2_{1}, \sigma^2_2)$ are known and fixed to their true values, and only $(\mu_1, \mu_2)$ are to be estimated.
+For this experiment, we simulate data using the parameters $p = 0.3$, $\sigma^2_1= \sigma^2_2=1$,  and $(\mu_1,\mu_2)=(2, 5)$.
+
+
+
+```{r simulate}
+#| code-fold: true
+#| code-summary: "Data simulation"
+p.true <- 0.3
+mu.true <- c(2, 5)
+sd.true <- c(1, 1)
+n <- 500
+
+res_EM_only_mu <- file.exists("res_EM_toy_mixture.Rdata")
+
+if (res_EM_only_mu) {
+    # Load cached results -> y , res_like_surface, res_all_run_only_mu 
+  load("res_EM_toy_mixture.Rdata")
+}else{
+  set.seed(3852)
+  # Latent component membership
+  Z <- rbinom(n, 1, p.true)          # Z_i = 1 with prob p
+  y <- ifelse(Z == 1,rnorm(n, mu.true[1], sd.true[1]),
+            rnorm(n, mu.true[2], sd.true[2]))
+  df_y <- data.frame(y = y)
+}
+```
+
+
+
+
+### The shape of the objective function
+
+The observed-data log-likelihood of a mixture is *multi-modal*. To visualise it, we fix $p = 0.3$ and the variances $\sigma_1^2=\sigma_2^2=1$ at their true values, and evaluate $(\mu_1,\mu_2) \mapsto \ell(y_1, \dots, y_n;\theta)$ on a grid:
+
+
+
+```{r likelihood-surface}
+#| code-fold: true
+#| code-summary: "Compute the surface"
+
+if (!res_EM_only_mu) {
+  N <- 150
+  grid_mu1 <- seq(0, 7, length.out = N)
+  grid_mu2 <- seq(0, 7, length.out = N)
+
+  res_like_surface <- expand.grid(mu1 = grid_mu1, mu2 = grid_mu2)
+  res_like_surface$loglik <- vapply(seq_len(nrow(res_like_surface)), function(i) {
+    pars <- list(mu = c(res_like_surface$mu1[i], res_like_surface$mu2[i]),
+                 var = sd.true^2, p = p.true)
+    logLikelihood(pars, y)
+  }, numeric(1))
+}
+```
+
+Because the component weights are fixed to $p = 0.3$ (and not $0.5$), the surface is **not** symmetric under the exchange of $\mu_1$ and $\mu_2$. Its global maximum lies at $(\mu_1,\mu_2) \approx (2,5)$.  
+In the surface plot, you can observe local maxima and saddle points. The difficulty for EM comes from the fact that the algorithm can be trapped away from the global maximum, as illustrated below.
+
+```{r surface-plot}
+#| code-fold: true
+#| code-summary: "Pplot the surface"
+gg_surface  <- ggplot(res_like_surface, aes(x = mu1, y = mu2, z = loglik)) +
+  geom_tile(aes(fill = loglik)) +
+  scale_fill_viridis_c() +
+  stat_contour(colour = "white", linewidth = 0.25) +
+  labs(x = expression(mu[1]), y = expression(mu[2]), fill = "Log-likelihood") +
+  coord_equal(expand = FALSE)
+gg_surface
+```
+
+
+### EM behavior on the likelihood surface
+
+We run EM — updating $\mu_1$ and $\mu_2$ only (variances and weight fixed, so that the trajectories stay in the $(\mu_1,\mu_2)$ plane of the surface above) — from several starting points:
+
+```{r em-mu-only}
+#| code-fold: true
+#| code-summary: "Run the EM from various starting points"
+theta0_mu <- list(
+  list(mu = c(1, 2),   var = c(1, 1), p = 0.3),
+  list(mu = c(0.5, 4), var = c(1, 1), p = 0.3),
+  list(mu = c(6, 1),   var = c(1, 1), p = 0.3),
+  list(mu = c(5, 6.5), var = c(1, 1), p = 0.3),
+  list(mu = c(6, 6),   var = c(1, 1), p = 0.3)
+)
+
+if (!res_EM_only_mu) {
+  res_all_run_only_mu <- do.call(rbind, lapply(seq_along(theta0_mu), function(run) {
+    res <- EM_2Mixture(theta0_mu[[run]], y, tol = 1e-5,estim_only_mu = TRUE)
+    
+    cbind(res,
+          Init    = run,
+          numIter = seq_len(nrow(res)))
+  }))
+  res_all_run_only_mu$Init <- factor(res_all_run_only_mu$Init)
+  save(y,res_all_run_only_mu, res_like_surface, file="res_EM_toy_mixture.Rdata")
+}
+```
+
+```{r em-surface-trajectory}
+#| code-fold: true
+#| code-summary: "Plot the trajectories"
+
+gg_surface  + geom_point(aes(x = mu.true[1], y = mu.true[2]),
+             shape = 0, colour = "red", size = 4) + 
+  geom_line(data = res_all_run_only_mu, aes(colour = Init), linewidth = 1) +
+  geom_point(data = res_all_run_only_mu, aes(colour = Init), size = 1) +
+  geom_point(data = res_all_run_only_mu %>% filter(numIter==1), aes(colour = Init),shape = 4, size = 3) + guides(colour = guide_legend(title = "Initialisation"))
+```
+
+The crosses mark the starting points and the red square the true parameter $(\mu_1,\mu_2) = (2,5)$; each colored line is the path of the EM updates.
+Three distinct convergence points can be observed: one corresponds to the global maximum of the likelihood (marked by the green point), which is close to the true parameter values (red square); another corresponds to a local maximum (bottom right); and the third corresponds to a saddle point of the likelihood surface (center of the figure).
+
+
+
+This toy example illustrates the practical importance of initializing the EM algorithm from multiple or carefully chosen starting points, in order to explore different regions of the parameter space and improve the chances of reaching the global maximum.
+
