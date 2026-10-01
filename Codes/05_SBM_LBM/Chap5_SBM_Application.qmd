@@ -18,7 +18,6 @@ knitr::opts_chunk$set(
   message = FALSE,
   cache   = TRUE
 )
-library(kableExtra)
 load('allRes_TreeFungi.rda')
 ```
 
@@ -44,6 +43,7 @@ library(patchwork)
 library(mclust)
 library(stringr)
 library(bipartite)
+library(kableExtra)
 ```
 
 ## 1. An antagonistic tree/fungus interaction network

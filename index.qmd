@@ -1,6 +1,6 @@
 # Latent Variable Models in Ecology and their Inference via the EM Algorithm and its Extensions — Codes and Data.  {.unlisted}
 
-![Book cover](images/illustration_bookcover.png){width=50%}
+![](images/illustration_bookcover.png){width=50%}
 
 This repository hosts the **codes and data** accompanying the book
 *Latent variable models for ecology with the EM algorithm*, by

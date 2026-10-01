@@ -7,9 +7,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Donnet, Gloaguen, Robin">
-<meta name="dcterms.date" content="2026-09-30">
+<meta name="dcterms.date" content="2026-10-01">
 
-<title>Chap. 2: Latent variable models and the EM algorithm</title>
+<title>Chap. 2: Latent variable models and the EM algorithm – Codes and Data</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -66,21 +66,54 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 
 
-<script src="EM_toy_mixture_files/libs/clipboard/clipboard.min.js"></script>
-<script src="EM_toy_mixture_files/libs/quarto-html/quarto.js" type="module"></script>
-<script src="EM_toy_mixture_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="EM_toy_mixture_files/libs/quarto-html/popper.min.js"></script>
-<script src="EM_toy_mixture_files/libs/quarto-html/tippy.umd.min.js"></script>
-<script src="EM_toy_mixture_files/libs/quarto-html/anchor.min.js"></script>
-<link href="EM_toy_mixture_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="EM_toy_mixture_files/libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="EM_toy_mixture_files/libs/bootstrap/bootstrap.min.js"></script>
-<link href="EM_toy_mixture_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="EM_toy_mixture_files/libs/bootstrap/bootstrap-d49910c2835f6cc0c318f40462b483df.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
-<script src="EM_toy_mixture_files/libs/kePrint-0.0.1/kePrint.js"></script>
-<link href="EM_toy_mixture_files/libs/lightable-0.0.1/lightable.css" rel="stylesheet">
-<link href="EM_toy_mixture_files/libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet">
-<script src="EM_toy_mixture_files/libs/pagedtable-1.1/js/pagedtable.js"></script>
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-0d4dc3e79fc5e928534d34c30f75bbf1.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../../site_libs/kePrint-0.0.1/kePrint.js"></script>
+<link href="../../site_libs/lightable-0.0.1/lightable.css" rel="stylesheet">
+<link href="../../site_libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet">
+<script src="../../site_libs/pagedtable-1.1/js/pagedtable.js"></script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
   <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
@@ -114,12 +147,85 @@ window.Quarto = {
 
 </head>
 
-<body class="quarto-light">
+<body class="nav-sidebar docked quarto-light">
 
-<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
-<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-  <nav id="TOC" role="doc-toc" class="toc-active">
-    <h2 id="toc-title">Table of contents</h2>
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../Codes/02_MixtureAdelie/Chap2_EM_toy_mixture.html">Codes</a></li><li class="breadcrumb-item"><a href="../../Codes/02_MixtureAdelie/Chap2_EM_toy_mixture.html">Chap. 2: Latent variable models and the EM algorithm</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto"><div class="quarto-sidebar-header"><div class="sidebar-header-item">
+<p><img src="../../images/bird.png" class="img-fluid" style="width:90.0%"></p>
+</div></div>
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../../">Latent variable models for ecology with EM</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Home</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Codes</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../Codes/02_MixtureAdelie/Chap2_EM_toy_mixture.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Chap. 2: Latent variable models and the EM algorithm</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../Codes/05_SBM_LBM/Chap5_SBM_Application.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Chapter 5: Approximate E-step</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../Codes/06_NonLinearMIxedEffects/Chap6_SAEM_MCMC_LFMC.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Chapter 6: Stochastic E-step</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
    
   <ul>
   <li><a href="#palmer-penguins-dataset" id="toc-palmer-penguins-dataset" class="nav-link active" data-scroll-target="#palmer-penguins-dataset">1. Palmer penguins dataset</a>
@@ -135,10 +241,11 @@ window.Quarto = {
   </ul></li>
   </ul>
 </nav>
-</div>
+    </div>
+<!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default">
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../Codes/02_MixtureAdelie/Chap2_EM_toy_mixture.html">Codes</a></li><li class="breadcrumb-item"><a href="../../Codes/02_MixtureAdelie/Chap2_EM_toy_mixture.html">Chap. 2: Latent variable models and the EM algorithm</a></li></ol></nav>
 <div class="quarto-title">
 <h1 class="title">Chap. 2: Latent variable models and the EM algorithm</h1>
 <p class="subtitle lead">The EM algorithm in action on a two-component Gaussian mixture</p>
@@ -158,7 +265,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 30, 2026</p>
+      <p class="date">October 1, 2026</p>
     </div>
   </div>
   
@@ -193,7 +300,7 @@ window.Quarto = {
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="EM_toy_mixture_files/figure-html/data%20palmer%20penguins-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="Chap2_EM_toy_mixture_files/figure-html/data palmer penguins-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -401,7 +508,7 @@ Note
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="EM_toy_mixture_files/figure-html/plot%20traj-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="Chap2_EM_toy_mixture_files/figure-html/plot traj-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -486,7 +593,7 @@ In the surface plot, you can observe local maxima and saddle points. The difficu
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="EM_toy_mixture_files/figure-html/surface-plot-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="Chap2_EM_toy_mixture_files/figure-html/surface-plot-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -531,18 +638,19 @@ In the surface plot, you can observe local maxima and saddle points. The difficu
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="EM_toy_mixture_files/figure-html/em-surface-trajectory-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="Chap2_EM_toy_mixture_files/figure-html/em-surface-trajectory-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 </div>
 <p>The crosses mark the starting points and the red square the true parameter <span class="math inline">\((\mu_1,\mu_2) = (2,5)\)</span>; each colored line is the path of the EM updates. Three distinct convergence points can be observed: one corresponds to the global maximum of the likelihood (marked by the green point), which is close to the true parameter values (red square); another corresponds to a local maximum (bottom right); and the third corresponds to a saddle point of the likelihood surface (center of the figure).</p>
 <p>This toy example illustrates the practical importance of initializing the EM algorithm from multiple or carefully chosen starting points, in order to explore different regions of the parameter space and improve the chances of reaching the global maximum.</p>
+
+
 </section>
 </section>
 
-</main>
-<!-- /main column -->
+</main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     const icon = "";
@@ -944,6 +1052,19 @@ In the surface plot, you can observe local maxima and saddle points. The difficu
   });
   </script>
 </div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>LVME with EM</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>© 2026</p>
+</div>
+  </div>
+</footer>
 
 
 
