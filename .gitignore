@@ -5,7 +5,6 @@
 
 # Quarto website output and render artifacts
 _site/
-*_files/
 *_cache/
 *.knit.md
 
