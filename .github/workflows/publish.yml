@@ -35,7 +35,7 @@ jobs:
       - name: Install R packages
         run: |
             install.packages(c("knitr","rmarkdown","sbm","ggplot2","patchwork","mclust",
-            "stringr", "bipartite","kableExtra", "dplyr","tidyr","palmerpenguins"))
+            "stringr", "bipartite","kableExtra", "dplyr","tidyr","palmerpenguins","mvtnorm"))
         shell: Rscript {0}
 
       - name: Setup Quarto
