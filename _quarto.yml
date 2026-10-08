@@ -5,12 +5,13 @@ website:
   title: "Codes and Data"
   page-footer:
     left: "LVME with EM"
+    center: "S. Donnet, P. Gloaguen, S. Robin"
     right: "© 2026"
     border: true
 
   sidebar:
     style: "docked"
-    title: "Latent variable models for ecology with EM"
+    title: "Latent Variable Models in Ecology. *Their Use and Inference via the EM Algorithm and its Extensions*"
     header: |
       ![](/images/bird.png){width=90%}
     contents:

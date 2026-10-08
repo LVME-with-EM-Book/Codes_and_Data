@@ -1,9 +1,9 @@
-# Latent Variable Models in Ecology and their Inference via the EM Algorithm and its Extensions — Codes and Data.  {.unlisted}
+# Companion website of the book  "*Latent Variable Models in Ecology. Their Use and Inference via the EM Algorithm and its Extensions*"  {.unlisted}
 
 ![](images/illustration_bookcover.png){width=50%}
 
 This repository hosts the **codes and data** accompanying the book
-*Latent variable models for ecology with the EM algorithm*, by
+*Latent Variable Models in Ecology. Their Use and Inference via the EM Algorithm and its Extensions*, by
 [Sophie Donnet](https://sophiedonnet.github.io/),
 [Pierre Gloaguen]() and [Stéphane Robin](https://scj-robin.github.io/).
 
@@ -15,9 +15,15 @@ chapters are presented.
 
 The illustrative data analyses, chapter by chapter:
 
-- **Chapter 2 — Latent variable models and the EM algorithm.** The EM algorithm in action on a two-component Gaussian mixture ([bill length of Palmer penguins](Codes/02_MixtureAdelie/Chap2_EM_toy_mixture.html)).
-- **Chapter 5 — Approximate E-step.** Variational EM for a Stochastic Block Model fitted to a fungus–tree interaction network ([data analysis](Codes/05_SBM_LBM/Chap5_SBM_Application.html)).
-- **Chapter 6 — Stochastic E-step.** SAEM-MCMC estimation for the Live Fuel Moisture Content data ([data analysis](Codes/06_NonLinearMIxedEffects/Chap6_SAEM_MCMC_LFMC.html)).
+- **Chapter 2 — Latent variable models and the EM algorithm.**     
+  - The EM algorithm in action on a two-component Gaussian mixture ([bill length of Palmer penguins](Codes/02_MixtureAdelie/Chap2_EM_toy_mixture.html)).
+- **Chapter 3 — Explicit E-step.**
+- **Chapter 4 — Non explicit E-step**
+- **Chapter 5 — Approximate E-step.** 
+   - Variational EM for a Stochastic Block Model fitted to a [fungus–tree interaction network](Codes/05_SBM_LBM/Chap5_SBM_Application.html).
+   - Variational EM for the Poisson Log Normal model
+- **Chapter 6 — Stochastic E-step.** 
+  - SAEM-MCMC estimation for the [Live Fuel Moisture Content data](Codes/06_NonLinearMIxedEffects/Chap6_SAEM_MCMC_LFMC.html)
 
 ## Organisation of the repository
 
