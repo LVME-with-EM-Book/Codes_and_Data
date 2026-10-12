@@ -1,6 +1,9 @@
 project:
   type: website
   output-dir: docs
+  preview:
+    port: 4200
+    browser: false
 website:
   title: "Codes and Data"
   page-footer:
@@ -28,3 +31,5 @@ format:
     theme: [cosmo, css/styles.css]
     code-copy: true
     code-line-numbers: false
+execute:
+  cache: true

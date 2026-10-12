@@ -1,0 +1,22 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build Site",
+            "type": "shell",
+            "command": "quarto render",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Preview Site",
+            "type": "shell",
+            "command": "quarto preview --no-browser --port 4200",
+            "isBackground": true,
+            "problemMatcher": []
+        }
+    ]
+}
